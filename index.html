@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Snake 4Dinals</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { margin: 0; overflow: hidden; touch-action: none; background-color: #000;}
+        #score { position: absolute; top: 20px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; z-index: 1; }
+        #controls { position: absolute; top: 20px; right: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; text-align: right; z-index: 1; width: 200px; }
+        #counters { position: absolute; bottom: 30px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; z-index: 1; }
+        #remaining { position: absolute; top: 60px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; z-index: 1; }
+        /* Styles for the game over screen */
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            z-index: 10;
+            display: none; /* Hidden by default */
+        }
+        #game-over button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 24px;
+        }
+        /* Styles for the sprint cooldown indicator */
+        #sprint-indicator {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            z-index: 1;
+        }
+        #playerOnLevel {
+            position: absolute;
+            top: 140px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            z-index: 1;
+        }
+        #foodOnLevel {
+            position: absolute;
+            top: 180px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            z-index: 1;
+        }
+        /* Fullscreen Button */
+        #fullscreen-button {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            padding: 10px 20px;
+            font-size: 18px;
+            z-index: 1;
+            background-color: #FFA500;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        @media screen and (max-height: 300px) {
+         #fullscreen-button, #foodOnLevel, #playerOnLevel, #sprint-indicator,#score, #controls, #counters, #remaining {
+        display: none;
+    }
+}
+
+.fa-icons{
+    fill: #FFA500;
+    width: 20px;
+    height: 16px;
+}
+.fa-icons-white{
+    fill: #FFF;
+    width: 25px;
+    height: 25px;
+    margin-bottom: -5px;
+
+}
+
+#startGameContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000000;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#startGame{ 
+    padding: 20px;
+    background-color: #FFA500;
+    color: #000;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 24px;
+}
+    </style>
+</head>
+<body>
+    <div id="startGameContainer">
+        <button id="startGame">
+            Start Game
+        </button>
+    </div>
+    <div id="score"><span style="color: #FFA500"><i class="fa-solid fa-trophy"></i></span> Score: 0</div>
+    <div id="controls">
+        <svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 64C86 64 0 150 0 256S86 448 192 448l256 0c106 0 192-86 192-192s-86-192-192-192L192 64zM496 168a40 40 0 1 1 0 80 40 40 0 1 1 0-80zM392 304a40 40 0 1 1 80 0 40 40 0 1 1 -80 0zM168 200c0-13.3 10.7-24 24-24s24 10.7 24 24l0 32 32 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-32 0 0 32c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-32-32 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l32 0 0-32z"/></svg> Controls:<br>
+        <span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22l0 56-192 0 0-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22l0-56 192 0 0 56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z"/></svg> Swipe Left/Right:</span><br> Turn<br><br>
+        <span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M145.6 7.7C141 2.8 134.7 0 128 0s-13 2.8-17.6 7.7l-104 112c-6.5 7-8.2 17.2-4.4 25.9S14.5 160 24 160l56 0 0 192-56 0c-9.5 0-18.2 5.7-22 14.4s-2.1 18.9 4.4 25.9l104 112c4.5 4.9 10.9 7.7 17.6 7.7s13-2.8 17.6-7.7l104-112c6.5-7 8.2-17.2 4.4-25.9s-12.5-14.4-22-14.4l-56 0 0-192 56 0c9.5 0 18.2-5.7 22-14.4s2.1-18.9-4.4-25.9l-104-112z"/></svg> Swipe Up/Down:</span><br> Move Levels<br><br>
+        <span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M142.9 96c-21.5 0-42.2 8.5-57.4 23.8L54.6 150.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L40.2 74.5C67.5 47.3 104.4 32 142.9 32C223 32 288 97 288 177.1c0 38.5-15.3 75.4-42.5 102.6L109.3 416 288 416c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 480c-12.9 0-24.6-7.8-29.6-19.8s-2.2-25.7 6.9-34.9L200.2 234.5c15.2-15.2 23.8-35.9 23.8-57.4c0-44.8-36.3-81.1-81.1-81.1z"/></svg> Double Tap:</span><br> Sprint<br><br>
+        <br>
+        <strong><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M384 96l0 224L64 320 64 96l320 0zM64 32C28.7 32 0 60.7 0 96L0 320c0 35.3 28.7 64 64 64l117.3 0-10.7 32L96 416c-17.7 0-32 14.3-32 32s14.3 32 32 32l256 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-74.7 0-10.7-32L384 384c35.3 0 64-28.7 64-64l0-224c0-35.3-28.7-64-64-64L64 32zm464 0c-26.5 0-48 21.5-48 48l0 352c0 26.5 21.5 48 48 48l64 0c26.5 0 48-21.5 48-48l0-352c0-26.5-21.5-48-48-48l-64 0zm16 64l32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16s7.2-16 16-16zm-16 80c0-8.8 7.2-16 16-16l32 0c8.8 0 16 7.2 16 16s-7.2 16-16 16l-32 0c-8.8 0-16-7.2-16-16zm32 160a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg> Desktop Controls:</strong><br>
+        <span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M278.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-64 64c-9.2 9.2-11.9 22.9-6.9 34.9s16.6 19.8 29.6 19.8l32 0 0 96-96 0 0-32c0-12.9-7.8-24.6-19.8-29.6s-25.7-2.2-34.9 6.9l-64 64c-12.5 12.5-12.5 32.8 0 45.3l64 64c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6l0-32 96 0 0 96-32 0c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l64 64c12.5 12.5 32.8 12.5 45.3 0l64-64c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8l-32 0 0-96 96 0 0 32c0 12.9 7.8 24.6 19.8 29.6s25.7 2.2 34.9-6.9l64-64c12.5-12.5 12.5-32.8 0-45.3l-64-64c-9.2-9.2-22.9-11.9-34.9-6.9s-19.8 16.6-19.8 29.6l0 32-96 0 0-96 32 0c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-64-64z"/></svg> Arrow Keys:</span><br> Move<br><br>
+        <span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M64 80c-8.8 0-16 7.2-16 16l0 320c0 8.8 7.2 16 16 16l320 0c8.8 0 16-7.2 16-16l0-320c0-8.8-7.2-16-16-16L64 80zM0 96C0 60.7 28.7 32 64 32l320 0c35.3 0 64 28.7 64 64l0 320c0 35.3-28.7 64-64 64L64 480c-35.3 0-64-28.7-64-64L0 96zm224 64c6.7 0 13 2.8 17.6 7.7l104 112c6.5 7 8.2 17.2 4.4 25.9s-12.5 14.4-22 14.4l-208 0c-9.5 0-18.2-5.7-22-14.4s-2.1-18.9 4.4-25.9l104-112c4.5-4.9 10.9-7.7 17.6-7.7z"/></svg> Shift:</span><br> Sprint
+    </div>
+    <div id="counters">Steps: 0 / Minimal Total Steps: 0</div>
+    <div id="remaining"><span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M192 64l0 64c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32zM82.7 207c-15.3 8.8-20.5 28.4-11.7 43.7l32 55.4c8.8 15.3 28.4 20.5 43.7 11.7l55.4-32c15.3-8.8 20.5-28.4 11.7-43.7l-32-55.4c-8.8-15.3-28.4-20.5-43.7-11.7L82.7 207zM288 192c-17.7 0-32 14.3-32 32l0 64c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-64 0zm64 160c-17.7 0-32 14.3-32 32l0 64c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-64 0zM160 384l0 64c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32 14.3-32 32zM32 352c-17.7 0-32 14.3-32 32l0 64c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-64 0z"/></svg></span> Food Remaining: 25</div>
+    <!-- Sprint Cooldown Indicator -->
+    <div id="sprint-indicator"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M18.4 445c11.2 5.3 24.5 3.6 34.1-4.4L224 297.7 224 416c0 12.4 7.2 23.7 18.4 29s24.5 3.6 34.1-4.4L448 297.7 448 416c0 17.7 14.3 32 32 32s32-14.3 32-32l0-320c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 118.3L276.5 71.4c-9.5-7.9-22.8-9.7-34.1-4.4S224 83.6 224 96l0 118.3L52.5 71.4c-9.5-7.9-22.8-9.7-34.1-4.4S0 83.6 0 96L0 416c0 12.4 7.2 23.7 18.4 29z"/></svg> Sprint Ready</div>
+    <div id="playerOnLevel"><span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M32 416c-17.7 0-32 14.3-32 32s14.3 32 32 32l448 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 416z"/></svg> Snake Postion:</span> <span id="playerOnLevelSpan"></span> </div>
+    <div id="foodOnLevel"><span style="color: #FFA500"><svg class="fa-icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M256 0c17.7 0 32 14.3 32 32l0 10.4c93.7 13.9 167.7 88 181.6 181.6l10.4 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-10.4 0c-13.9 93.7-88 167.7-181.6 181.6l0 10.4c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-10.4C130.3 455.7 56.3 381.7 42.4 288L32 288c-17.7 0-32-14.3-32-32s14.3-32 32-32l10.4 0C56.3 130.3 130.3 56.3 224 42.4L224 32c0-17.7 14.3-32 32-32zM107.4 288c12.5 58.3 58.4 104.1 116.6 116.6l0-20.6c0-17.7 14.3-32 32-32s32 14.3 32 32l0 20.6c58.3-12.5 104.1-58.4 116.6-116.6L384 288c-17.7 0-32-14.3-32-32s14.3-32 32-32l20.6 0C392.1 165.7 346.3 119.9 288 107.4l0 20.6c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-20.6C165.7 119.9 119.9 165.7 107.4 224l20.6 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-20.6 0zM256 224a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg> Food Position:</span> <span id="foodOnLevelSpan"></span> </div>
+
+    <!-- Fullscreen Button -->
+    <button id="fullscreen-button"><svg class="fa-icons-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"/></svg></button>
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <div id="game-over-text">Game Over!</div>
+        <div id="final-score"></div>
+        <button id="restart-button">Restart</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize Telegram WebApp
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.expand(); // Expand the app to full screen
+            tg.ready(); // Tell Telegram WebApp that we're ready
+            
+            // You can add event listeners for Telegram-specific events
+            if (tg.onEvent) {
+                tg.onEvent('viewportChanged', function() {
+                    onWindowResize(); // Trigger resize when viewport changes
+                });
+            }
+            
+            // Setup Telegram theme
+            if (tg.colorScheme === 'dark') {
+                document.body.classList.add('dark-theme');
+            }
+            
+            // Send score back to Telegram when game is over
+            function sendScoreToTelegram(score, steps, minSteps) {
+                try {
+                    // First check if we can use haptic feedback
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+                    
+                    // Create data to send back to Telegram
+                    const gameData = {
+                        score: score,
+                        steps: steps,
+                        efficiency: Math.round((minSteps / steps) * 100)
+                    };
+                    
+                    // Use Telegram's sendData method to send the score back
+                    tg.sendData(JSON.stringify(gameData));
+                } catch (e) {
+                    console.error("Error sending data to Telegram:", e);
+                }
+            }
+        }
+
+        let scene, camera, renderer, snake, food, score;
+        const size = 30;
+        const levels = 5; // Number of levels stacked in the cube
+        let snakeBody, direction, moveInterval, baseSpeed, moveSpeed;
+        const sprintMultiplier = 1.5;  // Sprint speed multiplier (50% faster)
+        let isSprinting;  // Whether the snake is currently sprinting
+        let sprintCooldown = false; // Whether sprint is on cooldown
+        let sprintTimeout, cooldownTimeout; // Timers for sprint duration and cooldown
+        let gameWorld;
+        let rotationAngle, targetRotationAngle, isRotating;
+        let rotationDamping = 15; // Increased value for faster rotation
+        let currentLevel;
+        let dots; // Array to hold the dots for the dice
+        let stepCount; // User's cumulative step count
+        let minimalTotalSteps; // Minimal total steps to collect all food
+        let rand; // Seeded random number generator
+        const totalFoodItems = 25; // Total number of food particles
+        let foodPositions; // Array to hold all food positions
+        let foodIndex; // Index of the current food
+        let ghostSnake; // Ghost snake to show the best path to next food
+        let ghostPath; // Positions for the ghost snake to follow
+        let ghostIndex; // Index for the ghost's current position
+        let totalGhostSteps; // Total steps the ghost has taken
+        let ghostSnakeBody; // Array to hold the ghost snake's body segments
+        let ghostMoveInterval; // Interval for ghost snake movement
+        let ghostMoveSpeed = 150; // Ghost snake move speed (constant)
+        let animationFrameId; // To cancel the animation frame on restart
+        let isGameOver; // Flag to check if the game is over
+        // Touch variables
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        let lastTapTime = 0; // For double tap detection
+        let rotationQueue = []; // Queue for rotations
+        let grids = []; // Array to hold references to grid helpers
+        let planes = []; // Array to hold planes
+
+        // Neon colors array
+        const neonColors = [
+            0xff00ff, // Magenta
+            0x00ffff, // Cyan
+            0xffff00, // Yellow
+            0x00ff00, // Lime
+            0xff0000, // Red
+            0x0000ff, // Blue
+            0xffa500, // Orange
+            0x800080  // Purple
+        ];
+
+        // Hash function to convert a string to a numeric seed
+        function hashCode(str) {
+            var hash = 0, i, chr;
+            if (str.length === 0) return hash;
+            for (i = 0; i < str.length; i++) {
+                chr   = str.charCodeAt(i);
+                hash  = ((hash << 5) - hash) + chr;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash >>> 0; // Convert to unsigned 32-bit integer
+        }
+
+        // Seed-based random number generator (Linear Congruential Generator)
+        function LCG(s) {
+            var m = 4294967296, // 2^32
+                a = 1664525,
+                c = 1013904223;
+            var state = s ? hashCode(s) : Math.floor(Math.random() * m);
+            return function() {
+                state = (a * state + c) % m;
+                return state / m;
+            }
+        }
+
+        function init() {
+            isGameOver = false;
+            // Initialize variables
+            snakeBody = [];
+            direction = new THREE.Vector3(0, 0, -1);
+            isSprinting = false;
+            sprintCooldown = false;
+            rotationAngle = 0;
+            targetRotationAngle = 0;
+            isRotating = false;
+            currentLevel = 0;
+            dots = [];
+            stepCount = 0;
+            minimalTotalSteps = 0;
+            foodPositions = [];
+            foodIndex = 0;
+            ghostPath = [];
+            ghostIndex = 0;
+            totalGhostSteps = 0;
+            score = 0;
+            ghostSnakeBody = []; // Initialize ghost snake body array
+            rotationQueue = []; // Reset rotation queue
+            grids = []; // Reset grids array
+            planes = []; // Reset planes array
+
+            // Remove previous scene and renderer if they exist
+            if (scene) {
+                // Remove previous grids
+                grids.forEach(grid => {
+                    gameWorld.remove(grid);
+                });
+                grids.length = 0; // Clear the grids array
+
+                // Remove previous planes
+                planes.forEach(plane => {
+                    gameWorld.remove(plane);
+                });
+                planes.length = 0; // Clear the planes array
+
+                // Remove snake body segments
+                snakeBody.forEach(segment => {
+                    gameWorld.remove(segment);
+                });
+                snakeBody = [];
+
+                // Remove ghost snake body segments
+                ghostSnakeBody.forEach(segment => {
+                    scene.remove(segment);
+                });
+                ghostSnakeBody = [];
+
+                // Remove food if it exists
+                if (food) {
+                    scene.remove(food);
+                }
+
+                renderer.dispose();
+                cancelAnimationFrame(animationFrameId);
+                document.body.removeChild(renderer.domElement);
+            }
+
+            // Remove existing event listeners to prevent duplicates
+            document.removeEventListener('keydown', onDocumentKeyDown);
+            document.removeEventListener('keyup', onDocumentKeyUp);
+            document.removeEventListener('touchstart', onTouchStart);
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+            window.removeEventListener('resize', onWindowResize);
+            document.removeEventListener('fullscreenchange', onWindowResize);
+
+            // Extract seed from URL or use Telegram parameters if available
+            let seed;
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                seed = tg.initDataUnsafe.start_param;
+            } else {
+                seed = window.location.pathname.split('/')[2] || 'default_seed';
+            }
+            rand = LCG(seed);
+
+            // **Determine snake color based on seed**
+            const colorIndex = Math.floor(rand() * neonColors.length);
+            const snakeColor = neonColors[colorIndex];
+
+            // **Determine starting speed based on seed**
+            // Base speed range from 200ms (slower) to 150ms (current speed)
+            baseSpeed = 200 - Math.floor(rand() * 50); // Speed between 200ms and 150ms
+            moveSpeed = baseSpeed;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); // Adjust for device pixel ratio
+            document.body.appendChild(renderer.domElement);
+
+            // Add ambient light
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            // Add directional light
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(0, 50, 0);
+            scene.add(directionalLight);
+
+            gameWorld = new THREE.Group();
+            scene.add(gameWorld);
+
+            // Create snake's head with the seed-determined color
+            const snakeMaterial = new THREE.MeshLambertMaterial({ color: snakeColor });
+            const diceGeometry = new THREE.BoxGeometry(1, 1, 1);
+            snake = new THREE.Mesh(diceGeometry, snakeMaterial);
+            snake.position.set(0, 0, 0); // Start with the snake at integer coordinates
+            gameWorld.add(snake);
+            snakeBody.push(snake);
+
+            // Add the dots on the top face of the dice
+            const dotMaterial = new THREE.MeshLambertMaterial({ color: 0x800080 }); // Purple color
+            const dotGeometry = new THREE.SphereGeometry(0.1, 32, 32); // Small spheres as dots
+
+            // We'll create 5 dots and position them later
+            for (let i = 0; i < 5; i++) {
+                const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+                dot.visible = false; // Initially invisible
+                snake.add(dot);
+                dots.push(dot);
+            }
+
+            // Generate food positions
+            generateFoodPositions();
+
+            // Create the first food mesh
+            createFoodMesh();
+
+            updateCamera();
+
+            // Create multiple levels of grids
+            for (let i = 0; i < levels; i++) {
+                const gridHelper = new THREE.GridHelper(size, size);
+                gridHelper.position.y = i - Math.floor(levels / 2) - 0.5; // Lower the grid by 0.5 to sit under the voxels
+                grids.push(gridHelper); // Store reference to grid helper
+                gameWorld.add(gridHelper);
+
+                // Add curved plane on each level with increased curvature
+                const planeGeometry = new THREE.PlaneGeometry(size, size, 40, 40);
+                const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x333333, wireframe: true });
+                const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+                plane.rotation.x = -Math.PI / 2;
+                plane.position.y = i - Math.floor(levels / 2) - 0.5; // Lower the plane to match the grid's position
+
+                // Apply increased curve to the plane
+                const positions = plane.geometry.attributes.position.array;
+                const amplitude = 9;
+                const frequency = 0.7;
+                for (let j = 0; j < positions.length; j += 3) {
+                    const x = positions[j];
+                    const z = positions[j + 2];
+                    positions[j + 1] = amplitude * Math.sin(x * frequency) * Math.sin(z * frequency);
+                }
+                plane.geometry.attributes.position.needsUpdate = true;
+
+                gameWorld.add(plane);
+                planes.push(plane); // Store reference to plane
+            }
+
+            // Create ghost snake
+            createGhostSnake();
+
+            // Add event listeners
+            document.addEventListener('keydown', onDocumentKeyDown);
+            document.addEventListener('keyup', onDocumentKeyUp);  // Listen for key release to handle sprint
+
+            // Touch event listeners for mobile controls
+            document.addEventListener('touchstart', onTouchStart, { passive: false });
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd, { passive: false });
+
+            minimalTotalSteps = calculateMinimalTotalSteps(); // Calculate the minimal total steps
+            updateCounters(); // Update the counters display
+            setMoveInterval();
+            setGhostMoveInterval();
+            updateGridVisibility(); // Ensure correct grid is visible at start
+            updateFoodColor(); // Update the food color based on initial positions
+
+            // Hide the game over screen if it was visible
+            document.getElementById('game-over').style.display = 'none';
+
+            // Reset sprint indicator
+            document.getElementById('sprint-indicator').innerHTML = '<span style="color: #FFA500"><i class="fa-solid fa-forward-fast"></i></span> Sprint Ready';
+
+            // Add resize and fullscreen event listeners
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('fullscreenchange', onWindowResize); // Update on fullscreen change
+        }
+        
+        function onDocumentKeyDown(event) {
+            if (isGameOver) return;
+            const keyCode = event.which || event.keyCode; // Get the keycode
+            if (keyCode === 37) { // Left arrow key
+                enqueueRotation(-Math.PI / 2);
+            } else if (keyCode === 39) { // Right arrow key
+                enqueueRotation(Math.PI / 2);
+            } else if (keyCode === 38) { // Up arrow key
+                moveUpLevel();
+            } else if (keyCode === 40) { // Down arrow key
+                moveDownLevel();
+            } else if (keyCode === 16) { // Shift key for sprint
+                if (!isSprinting && !sprintCooldown) {
+                    startSprinting();
+                }
+            }
+        }
+
+        function onDocumentKeyUp(event) {
+            if (event.which === 16) { // Shift key released
+                // Sprint now ends after 3 seconds or when Shift is released
+                // We'll let the sprint duration manage the sprint end
+            }
+        }
+
+        // Touch event handlers
+        function onTouchStart(event) {
+            if (isGameOver) return;
+            if (event.touches.length === 1) {
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
+
+                // Double-tap detection
+                const currentTime = new Date().getTime();
+                const tapInterval = currentTime - lastTapTime;
+                if (tapInterval < 300 && tapInterval > 0) {
+                    // Double tap detected
+                    if (!isSprinting && !sprintCooldown) {
+                        startSprinting();
+                    }
+                }
+                lastTapTime = currentTime;
+            }
+        }
+
+        function onTouchMove(event) {
+            event.preventDefault(); // Prevent default touch actions like scrolling
+        }
+
+        function onTouchEnd(event) {
+            if (isGameOver) return;
+            touchEndX = event.changedTouches[0].clientX;
+            touchEndY = event.changedTouches[0].clientY;
+
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            if (absDx > 30 || absDy > 30) { // Minimum swipe distance
+                if (absDx > absDy) {
+                    // Horizontal swipe
+                    if (dx > 0) {
+                        // Swipe right
+                        enqueueRotation(Math.PI / 2);
+                    } else {
+                        // Swipe left
+                        enqueueRotation(-Math.PI / 2);
+                    }
+                } else {
+                    // Vertical swipe
+                    if (dy > 0) {
+                        // Swipe down
+                        moveDownLevel();
+                    } else {
+                        // Swipe up
+                        moveUpLevel();
+                    }
+                }
+            }
+        }
+
+        // Toggle fullscreen
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((err) => {
+                    console.error(`Error attempting to enable fullscreen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); // Adjust pixel ratio
+        }
+        
+        function updateCamera() {
+            const cameraOffset = new THREE.Vector3(0, 8, 10); // Adjusted for a closer view
+            cameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
+            camera.position.copy(snake.position).sub(direction.clone().multiplyScalar(10)).add(new THREE.Vector3(0, 8, 0)); // Adjusted for a closer view
+            camera.lookAt(snake.position);
+        }
+
+        function updateGridVisibility() {
+            grids.forEach((grid, index) => {
+                grid.visible = (index === currentLevel); // Show only the grid on the current level
+                document.getElementById("playerOnLevelSpan").innerHTML = `Level: ${(currentLevel + 1)}`;
+                
+            });
+        }
+
+        function generateFoodPositions() {
+            for (let i = 0; i < totalFoodItems; i++) {
+                const foodLevel = Math.floor(rand() * levels);
+                const foodPosition = {
+                    x: Math.floor(rand() * size - size / 2),
+                    y: foodLevel - Math.floor(levels / 2),
+                    z: Math.floor(rand() * size - size / 2)
+                };
+                foodPositions.push(foodPosition);
+            }
+        }
+
+        function createFoodMesh() {
+            if (foodIndex >= foodPositions.length) return; // No more food
+
+            const foodMaterial = new THREE.MeshLambertMaterial({
+                color: 0xff0000,
+                emissive: new THREE.Color(0xff0000),
+                emissiveIntensity: 0.5
+            });
+            const foodGeometry = new THREE.BoxGeometry(1, 1, 1);
+            food = new THREE.Mesh(foodGeometry, foodMaterial);
+
+            // Add an outline to the food to make it stand out
+            const outlineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide });
+            const outlineMesh = new THREE.Mesh(foodGeometry.clone(), outlineMaterial);
+            outlineMesh.scale.multiplyScalar(1.1); // Slightly larger to create an outline effect
+            food.add(outlineMesh);
+
+            food.position.set(foodPositions[foodIndex].x, foodPositions[foodIndex].y, foodPositions[foodIndex].z);
+            food.renderOrder = 2; // Ensure food renders after ghost snake
+            scene.add(food);
+
+            updateDots(); // Update dots
+            updateFoodColor(); // Update food color
+        }
+
+        function removeFoodMesh() {
+            scene.remove(food);
+        }
+
+        function updateDots() {
+            if (foodIndex >= foodPositions.length) return; // No more food
+
+            // Calculate level difference
+            const levelDifference = Math.abs(Math.round(snake.position.y) - foodPositions[foodIndex].y);
+
+            // Hide all dots first
+            dots.forEach(dot => dot.visible = false);
+
+            // Show dots based on level difference
+            for (let i = 0; i < levelDifference && i < 5; i++) {
+                dots[i].visible = true;
+            }
+
+            // Position dots on top face of the dice
+            const positions = [
+                [0, 0.5, 0],          // Center
+                [-0.3, 0.5, 0.3],     // Top left
+                [0.3, 0.5, -0.3],     // Bottom right
+                [-0.3, 0.5, -0.3],    // Bottom left
+                [0.3, 0.5, 0.3],      // Top right
+            ];
+
+            dots.forEach((dot, index) => {
+                dot.position.set(...positions[index]);
+            });
+        }
+        
+        // Updated function to speed up rotation
+        function updateRotation(deltaTime) {
+            if (isRotating) {
+                const diff = targetRotationAngle - rotationAngle;
+                const shortestAngle = Math.atan2(Math.sin(diff), Math.cos(diff));
+
+                // Use damping to smoothly interpolate the rotationAngle towards targetRotationAngle
+                rotationAngle += shortestAngle * rotationDamping * deltaTime;
+                rotationAngle = rotationAngle % (Math.PI * 2);
+
+                direction.set(-Math.sin(rotationAngle), 0, Math.cos(rotationAngle));
+                updateCamera();
+
+                // Check if rotation is close enough to target to snap
+                if (Math.abs(shortestAngle) < 0.01) {
+                    rotationAngle = targetRotationAngle;
+                    direction.set(-Math.round(Math.sin(rotationAngle)), 0, Math.round(Math.cos(rotationAngle)));
+                    isRotating = false;
+
+                    // Start next rotation if any are queued
+                    startNextRotation();
+                }
+            }
+        }
+
+        function moveSnake() {
+            if (!isRotating) {
+                updateSnakeBody();
+                snake.position.add(direction);
+                wrapPosition(snake.position);
+                stepCount++; // Increment step count
+                checkCollision();
+                updateCounters(); // Update counters display
+                updateCamera();
+
+                // Update food color if the snake has moved
+                updateFoodColor();
+            }
+        }
+function checkCollision() {
+    // Check for collision with food
+    if (food && Math.round(snake.position.x) === Math.round(food.position.x) && 
+        Math.round(snake.position.y) === Math.round(food.position.y) && 
+        Math.round(snake.position.z) === Math.round(food.position.z)) {
+        
+        // Update score
+        score += 100;
+        document.getElementById('score').innerHTML = `<span style="color: #FFA500"><i class="fa-solid fa-trophy"></i></span> Score: ${score}`;
+        
+        // Play food collection feedback
+        provideTelegramHapticFeedback('food');
+        
+        // Grow the snake
+        grow();
+        
+        // Remove current food and increment food index
+        removeFoodMesh();
+        foodIndex++;
+        
+        // Create new food if there are more available
+        if (foodIndex < foodPositions.length) {
+            createFoodMesh();
+            // Reset ghost snake to calculate new path
+            resetGhostSnake();
+        } else {
+            // No more food, game completed!
+            gameWon();
+        }
+    }
+    
+    // Check for collision with self (except head)
+    for (let i = 4; i < snakeBody.length; i++) { // Skip first few segments to prevent false collisions
+        if (Math.round(snake.position.x) === Math.round(snakeBody[i].position.x) && 
+            Math.round(snake.position.y) === Math.round(snakeBody[i].position.y) && 
+            Math.round(snake.position.z) === Math.round(snakeBody[i].position.z)) {
+            
+            // Game over on self-collision
+            gameOver();
+            return;
+        }
+    }
+}
+
+function gameOver() {
+    isGameOver = true;
+    
+    // Stop all game intervals
+    clearInterval(moveInterval);
+    clearInterval(ghostMoveInterval);
+    clearInterval(sprintTimeout);
+    clearInterval(cooldownTimeout);
+    
+    // Play error feedback
+    provideTelegramHapticFeedback('error');
+    
+    // Show game over screen with final score
+    document.getElementById('game-over').style.display = 'flex';
+    document.getElementById('final-score').innerHTML = `Score: ${score}<br>Steps: ${stepCount}<br>Efficiency: ${Math.round((minimalTotalSteps / stepCount) * 100)}%`;
+    
+    // Send score to Telegram if applicable
+    if (tg) {
+        sendScoreToTelegram(score, stepCount, minimalTotalSteps);
+    }
+}
+
+function gameWon() {
+    isGameOver = true;
+    
+    // Stop all game intervals
+    clearInterval(moveInterval);
+    clearInterval(ghostMoveInterval);
+    clearInterval(sprintTimeout);
+    clearInterval(cooldownTimeout);
+    
+    // Calculate bonus based on step efficiency
+    const efficiency = minimalTotalSteps / stepCount;
+    const efficiencyBonus = Math.round(1000 * efficiency);
+    score += efficiencyBonus;
+    
+    // Show game over screen with win message and final score
+    document.getElementById('game-over-text').innerHTML = 'You Win!';
+    document.getElementById('game-over').style.display = 'flex';
+    document.getElementById('final-score').innerHTML = `Score: ${score}<br>Steps: ${stepCount}<br>Efficiency: ${Math.round(efficiency * 100)}%<br>Bonus: ${efficiencyBonus}`;
+    
+    // Celebrate with haptic feedback
+    provideTelegramHapticFeedback('level');
+    
+    // Send score to Telegram if applicable
+    if (tg) {
+        sendScoreToTelegram(score, stepCount, minimalTotalSteps);
+    }
+}
+
+// This function is referenced but was missing for sprint functionality
+function startSprinting() {
+    if (isSprinting || sprintCooldown) return;
+    
+    // Start sprinting mode
+    isSprinting = true;
+    moveSpeed = baseSpeed / sprintMultiplier;
+    setMoveInterval();
+    
+    // Update sprint indicator
+    document.getElementById('sprint-indicator').innerHTML = '<span style="color: #FF0000"><i class="fa-solid fa-forward-fast"></i></span> Sprinting!';
+    
+    // Provide haptic feedback for sprint
+    provideTelegramHapticFeedback('sprint');
+    
+    // Sprint lasts for 3 seconds
+    sprintTimeout = setTimeout(function() {
+        endSprinting();
+    }, 3000);
+}
+
+function endSprinting() {
+    if (!isSprinting) return;
+    
+    // End sprinting mode
+    isSprinting = false;
+    moveSpeed = baseSpeed;
+    setMoveInterval();
+    
+    // Start cooldown
+    sprintCooldown = true;
+    document.getElementById('sprint-indicator').innerHTML = '<span style="color: #888888"><i class="fa-solid fa-forward-fast"></i></span> Sprint Cooldown...';
+    
+    // Cooldown lasts for 5 seconds
+    cooldownTimeout = setTimeout(function() {
+        sprintCooldown = false;
+        document.getElementById('sprint-indicator').innerHTML = '<span style="color: #FFA500"><i class="fa-solid fa-forward-fast"></i></span> Sprint Ready';
+    }, 5000);
+}
+
+function enqueueRotation(angle) {
+    if (isGameOver) return;
+    
+    rotationQueue.push(angle);
+    
+    // If we're not currently rotating, start the next rotation
+    if (!isRotating) {
+        startNextRotation();
+    }
+    
+    // Provide haptic feedback for turn
+    provideTelegramHapticFeedback('turn');
+}
+
+function startNextRotation() {
+    if (rotationQueue.length > 0) {
+        const nextRotation = rotationQueue.shift();
+        targetRotationAngle = (rotationAngle + nextRotation) % (Math.PI * 2);
+        isRotating = true;
+    }
+}
+
+function moveUpLevel() {
+    if (isGameOver) return;
+    
+    currentLevel = (currentLevel + 1) % levels;
+    snake.position.y = currentLevel - Math.floor(levels / 2);
+    updateGridVisibility();
+    updateDots();
+    updateFoodColor();
+    
+    // Provide haptic feedback for level change
+    provideTelegramHapticFeedback('level');
+}
+
+function moveDownLevel() {
+    if (isGameOver) return;
+    
+    currentLevel = (currentLevel - 1 + levels) % levels;
+    snake.position.y = currentLevel - Math.floor(levels / 2);
+    updateGridVisibility();
+    updateDots();
+    updateFoodColor();
+    
+    // Provide haptic feedback for level change
+    provideTelegramHapticFeedback('level');
+}
+        function wrapPosition(position) {
+            const halfSize = size / 2;
+            if (position.x < -halfSize) position.x = halfSize - 1;
+            if (position.x >= halfSize) position.x = -halfSize;
+            if (position.z < -halfSize) position.z = halfSize - 1;
+            if (position.z >= halfSize) position.z = -halfSize;
+            if (position.y < -Math.floor(levels / 2)) position.y = Math.floor(levels / 2);
+            if (position.y > Math.floor(levels / 2)) position.y = -Math.floor(levels / 2);
+        }
+
+        function updateSnakeBody() {
+            for (let i = snakeBody.length - 1; i > 0; i--) {
+                snakeBody[i].position.copy(snakeBody[i - 1].position);
+            }
+        }
+
+        function updateCounters() {
+            document.getElementById('counters').innerHTML = `Steps: <span style="color: #FFA500">${stepCount}</span> / Minimal Total Steps: <span style="color: #FFA500">${minimalTotalSteps}</span>`;
+            document.getElementById('remaining').innerHTML = `<span style="color: #FFA500"><i class="fa-solid fa-cubes-stacked"></i></span> Food Remaining: ${totalFoodItems - foodIndex}`;
+            
+        }
+
+        function grow() {
+            // Grow player's snake
+            const tailGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const tailMaterial = new THREE.MeshLambertMaterial({ color: snake.material.color }); // Use the same color as the head
+            const tailPiece = new THREE.Mesh(tailGeometry, tailMaterial);
+            const lastPiece = snakeBody[snakeBody.length - 1];
+            tailPiece.position.copy(lastPiece.position);
+            snakeBody.push(tailPiece);
+            gameWorld.add(tailPiece);
+
+            // Grow ghost snake
+            growGhostSnake();
+        }
+        
+        function createGhostSnake() {
+            const ghostMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                opacity: 0.3,
+                transparent: true,
+                depthWrite: false,
+                depthTest: false,
+                blending: THREE.AdditiveBlending
+            });
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            ghostSnake = new THREE.Mesh(geometry, ghostMaterial);
+            ghostSnake.position.set(snake.position.x, snake.position.y, snake.position.z);
+            ghostSnake.renderOrder = 0; // Ensure ghost snake renders behind food
+            scene.add(ghostSnake);
+            ghostSnakeBody.push(ghostSnake); // Add ghost head to body array
+
+            // Calculate the initial ghost path
+            calculateGhostPath();
+        }
+
+        function growGhostSnake() {
+            // Create a new segment for the ghost snake
+            const ghostTailGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const ghostTailMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                opacity: 0.3,
+                transparent: true,
+                depthWrite: false,
+                depthTest: false,
+                blending: THREE.AdditiveBlending
+            });
+            const ghostTailPiece = new THREE.Mesh(ghostTailGeometry, ghostTailMaterial);
+            ghostTailPiece.position.copy(ghostSnake.position);
+            ghostTailPiece.renderOrder = 0; // Ensure ghost snake renders behind food
+            scene.add(ghostTailPiece);
+            ghostSnakeBody.push(ghostTailPiece);
+        }
+
+        function resetGhostSnake() {
+            // Reposition ghost snake to player's current position
+            ghostSnake.position.copy(snake.position);
+
+            // Reset positions of ghost snake body segments to the head's position
+            for (let i = 0; i < ghostSnakeBody.length; i++) {
+                ghostSnakeBody[i].position.copy(ghostSnake.position);
+            }
+
+            ghostIndex = 0;
+            totalGhostSteps = 0;
+            ghostPath = [];
+            calculateGhostPath();
+        }
+
+        function calculateGhostPath() {
+            if (foodIndex >= foodPositions.length) return; // No more food
+
+            const start = {
+                x: Math.round(snake.position.x),
+                y: Math.round(snake.position.y),
+                z: Math.round(snake.position.z)
+            };
+            const end = foodPositions[foodIndex];
+
+            const path = calculatePathBetweenPoints(start, end);
+            ghostPath = path;
+            ghostIndex = 0;
+        }
+
+        function calculatePathBetweenPoints(start, end) {
+            let path = [];
+            let currentPosition = { x: start.x, y: start.y, z: start.z };
+
+            // Calculate steps needed on each axis, considering wrapping
+            const dx = getWrappedSteps(currentPosition.x, end.x, size);
+            const dy = end.y - currentPosition.y;
+            const dz = getWrappedSteps(currentPosition.z, end.z, size);
+
+            // Move along X axis
+            for (let i = 0; i < Math.abs(dx); i++) {
+                currentPosition.x = wrapCoordinate(currentPosition.x + Math.sign(dx), size);
+                path.push({ x: currentPosition.x, y: currentPosition.y, z: currentPosition.z });
+            }
+
+            // Move along Y axis (levels)
+            for (let i = 0; i < Math.abs(dy); i++) {
+                currentPosition.y += Math.sign(dy);
+                path.push({ x: currentPosition.x, y: currentPosition.y, z: currentPosition.z });
+            }
+
+            // Move along Z axis
+            for (let i = 0; i < Math.abs(dz); i++) {
+                currentPosition.z = wrapCoordinate(currentPosition.z + Math.sign(dz), size);
+                path.push({ x: currentPosition.x, y: currentPosition.y, z: currentPosition.z });
+            }
+
+            return path;
+        }
+        
+        function getWrappedSteps(a, b, maxSize) {
+            const direct = b - a;
+            const wrapAround = (direct > 0) ? direct - maxSize : direct + maxSize;
+            return (Math.abs(direct) < Math.abs(wrapAround)) ? direct : wrapAround;
+        }
+
+        function wrapCoordinate(coord, maxSize) {
+            if (coord < -maxSize / 2) return coord + maxSize;
+            if (coord >= maxSize / 2) return coord - maxSize;
+            return coord;
+        }
+
+        function moveGhostSnake() {
+            if (isRotating || isGameOver) return; // Don't move ghost snake if player is rotating
+            if (ghostIndex < ghostPath.length) {
+                updateGhostSnakeBody();
+                const pos = ghostPath[ghostIndex];
+                ghostSnake.position.set(pos.x, pos.y, pos.z);
+                ghostIndex++;
+                totalGhostSteps++;
+            }
+        }
+
+        function updateGhostSnakeBody() {
+            for (let i = ghostSnakeBody.length - 1; i > 0; i--) {
+                ghostSnakeBody[i].position.copy(ghostSnakeBody[i - 1].position);
+            }
+            if (ghostSnakeBody.length > 0) {
+                ghostSnakeBody[0].position.copy(ghostSnake.position);
+            }
+        }
+
+        function calculateMinimalTotalSteps() {
+            let totalMinimalSteps = 0;
+            let positions = [{ x: 0, y: 0, z: 0 }].concat(foodPositions); // Start from initial position
+
+            for (let i = 0; i < positions.length - 1; i++) {
+                const current = positions[i];
+                const next = positions[i + 1];
+
+                totalMinimalSteps += calculateWrappedDistance(current, next);
+            }
+            return totalMinimalSteps;
+        }
+
+        function calculateWrappedDistance(a, b) {
+            const dx = Math.min(Math.abs(a.x - b.x), size - Math.abs(a.x - b.x));
+            const dy = Math.abs(a.y - b.y);
+            const dz = Math.min(Math.abs(a.z - b.z), size - Math.abs(a.z - b.z));
+
+            return dx + dy + dz;
+        }
+
+        function updateFoodColor() {
+            if (!food) return;
+
+            const snakeLevel = Math.round(snake.position.y);
+            const foodLevel = food.position.y;
+            document.getElementById("foodOnLevelSpan").innerHTML = `Level: ${(foodLevel + 3)}`
+            
+            if (foodLevel > snakeLevel) {
+                // Food is on a level above the snake's head
+                food.material.color.set(0x00ff00); // Green
+                document.getElementById("playerOnLevelSpan").style.color = '#00FF00'
+                food.material.emissive.set(0x00ff00);
+            } else if (foodLevel < snakeLevel) {
+                // Food is on a level below the snake's head
+                food.material.color.set(0xff0000); // Red
+                document.getElementById("playerOnLevelSpan").style.color = 'red'
+                food.material.emissive.set(0xff0000);
+            } else {
+                // Food is on the same level as the snake's head
+                food.material.color.set(0xffa500); // Orange
+                food.material.emissive.set(0xffa500);
+                document.getElementById("foodOnLevelSpan").style.color = '#FFA500'
+                document.getElementById("playerOnLevelSpan").style.color = '#FFA500'
+            }
+        }
+        
+        function invertScreenColors() {
+            // Apply CSS filter to invert colors
+            renderer.domElement.style.filter = 'invert(1)';
+            // Revert back after 3 seconds
+            setTimeout(() => {
+                renderer.domElement.style.filter = '';
+            }, 3000);
+        }
+
+        let previousTime = 0;
+        function animate(time) {
+            if (isGameOver) return; // Stop the animation if the game is over
+            animationFrameId = requestAnimationFrame(animate);
+            const deltaTime = (time - previousTime) / 1000; // Convert to seconds
+            previousTime = time;
+            updateRotation(deltaTime);
+            renderer.render(scene, camera);
+        }
+        
+        // Self-contained SHA-256 function (without external libraries)
+        function sha256(ascii) {
+            function rightRotate(value, amount) {
+                return (value >>> amount) | (value << (32 - amount));
+            }
+            const maxWord = Math.pow(2, 32);
+            const result = [];
+            let words = [];
+            const asciiBitLength = ascii.length * 8;
+            let hash = sha256.h = sha256.h || [];
+            const k = sha256.k = sha256.k || [];
+            let primeCounter = k.length;
+            const isComposite = {};
+            for (let candidate = 2; primeCounter < 64; candidate++) {
+                if (!isComposite[candidate]) {
+                    for (let i = 0; i < 313; i += candidate) {
+                        isComposite[i] = candidate;
+                    }
+                    hash[primeCounter] = (Math.pow(candidate, 0.5) * maxWord) | 0;
+                    k[primeCounter++] = (Math.pow(candidate, 1 / 3) * maxWord) | 0;
+                }
+            }
+            ascii += '\x80';
+            while (ascii.length % 64 - 56) ascii += '\x00';
+            for (let i = 0; i < ascii.length; i++) {
+                const j = ascii.charCodeAt(i);
+                if (j >> 8) return;
+                words[i >> 2] |= j << ((3 - i) % 4) * 8;
+            }
+            words[words.length] = (asciiBitLength / maxWord) | 0;
+            words[words.length] = asciiBitLength;
+            for (let j = 0; j < words.length; ) {
+                const w = words.slice(j, (j += 16));
+                const oldHash = hash.slice(0);
+                for (let i = 0; i < 64; i++) {
+                    const i2 = i + j;
+                    const w15 = w[i - 15],
+                        w2 = w[i - 2];
+                    const a = hash[0],
+                        e = hash[4];
+                    const temp1 =
+                        hash[7] +
+                        (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) +
+                        ((e & hash[5]) ^ (~e & hash[6])) +
+                        k[i] +
+                        (w[i] =
+                            i < 16
+                                ? w[i]
+                                : (w[i - 16] +
+                                      (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) +
+                                      w[i - 7] +
+                                      (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) |
+                                  0);
+                    const temp2 =
+                        (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) +
+                        ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+                    hash = [(temp1 + temp2) | 0].concat(hash);
+                    hash[4] = (hash[4] + temp1) | 0;
+                }
+                for (let i = 0; i < 8; i++) {
+                    hash[i] = (hash[i] + oldHash[i]) | 0;
+                }
+            }
+            for (let i = 0; i < 8; i++) {
+                for (let j = 3; j + 1; j--) {
+                    const b = (hash[i] >> (j * 8)) & 255;
+                    result.push((b < 16 ? '0' : '') + b.toString(16));
+                }
+            }
+            return result.join('');
+        }
+
+        // Convert the first 8 characters of the hex SHA-256 hash to a number for RNG
+        function hexToNumber(hex) {
+            return parseInt(hex.slice(0, 8), 16); // Convert the first 8 hex digits to an integer
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize game buttons after DOM is fully loaded
+            document.getElementById('startGame').addEventListener('click', function() {
+                document.getElementById("startGameContainer").style.display = "none";
+                init();
+                animate(0);
+            });
+
+            // Restart button functionality
+            document.getElementById('restart-button').addEventListener('click', function() {
+                init();
+                animate(0);
+            });
+
+            // Fullscreen button event listener
+            document.getElementById('fullscreen-button').addEventListener('click', toggleFullScreen);
+            
+            // Initialize the game automatically if in Telegram WebApp
+            if (tg) {
+                // If we're in a Telegram WebApp, we can check if we need to auto-start
+                if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                    // Auto-start if a start_param is provided
+                    document.getElementById("startGameContainer").style.display = "none";
+                    // Delay initialization to ensure everything is loaded
+                    setTimeout(function() {
+                        init();
+                        animate(0);
+                    }, 500);
+                }
+                
+                // Add back button handler if supported
+                if (tg.BackButton && typeof tg.BackButton.onClick === 'function') {
+                    tg.BackButton.onClick(function() {
+                        if (isGameOver) {
+                            // If game is over, just exit
+                            tg.close();
+                        } else {
+                            // Ask if user wants to quit the current game
+                            if (tg.showPopup) {
+                                tg.showPopup({
+                                    title: 'Quit Game?',
+                                    message: 'Are you sure you want to quit the current game?',
+                                    buttons: [
+                                        {type: 'destructive', text: 'Quit', callback: function() { tg.close(); }},
+                                        {type: 'cancel'}
+                                    ]
+                                });
+                            } else {
+                                tg.close();
+                            }
+                        }
+                    });
+                    
+                    // Show the back button when needed
+                    if (typeof tg.BackButton.show === 'function') {
+                        tg.BackButton.show();
+                    }
+                }
+            }
+        });
+        
+        // Define all function declarations before initialization
+        function setMoveInterval() {
+            clearInterval(moveInterval);
+            moveInterval = setInterval(moveSnake, moveSpeed);
+        }
+
+        function setGhostMoveInterval() {
+            clearInterval(ghostMoveInterval);
+            ghostMoveInterval = setInterval(moveGhostSnake, ghostMoveSpeed);
+        }
+        
+        // Add Telegram-specific haptic feedback
+        function provideTelegramHapticFeedback(type) {
+            if (tg && tg.HapticFeedback) {
+                switch(type) {
+                    case 'food':
+                        if (tg.HapticFeedback.impactOccurred) {
+                            tg.HapticFeedback.impactOccurred('medium');
+                        }
+                        break;
+                    case 'level':
+                        if (tg.HapticFeedback.notificationOccurred) {
+                            tg.HapticFeedback.notificationOccurred('success');
+                        }
+                        break;
+                    case 'turn':
+                        if (tg.HapticFeedback.impactOccurred) {
+                            tg.HapticFeedback.impactOccurred('light');
+                        }
+                        break;
+                    case 'sprint':
+                        if (tg.HapticFeedback.impactOccurred) {
+                            tg.HapticFeedback.impactOccurred('heavy');
+                        }
+                        break;
+                    case 'error':
+                        if (tg.HapticFeedback.notificationOccurred) {
+                            tg.HapticFeedback.notificationOccurred('error');
+                        }
+                        break;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
