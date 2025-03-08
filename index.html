@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Snake 4Dinals</title>
+    <title>Snake 4Dinals powered by Pepodins</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         body { margin: 0; overflow: hidden; touch-action: none; background-color: #000;}
-        #score { position: absolute; top: 20px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; z-index: 1; }
-        #controls { position: absolute; top: 20px; right: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; text-align: right; z-index: 1; width: 200px; }
-        #counters { position: absolute; bottom: 30px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; z-index: 1; }
-        #remaining { position: absolute; top: 60px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 18px; z-index: 1; }
+        #score { position: absolute; top: 20px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 10px; z-index: 1; }
+        #controls { position: absolute; top: 20px; right: 20px; color: white; font-family: Arial, sans-serif; font-size: 10px; text-align: right; z-index: 1; width: 200px; }
+        #counters { position: absolute; bottom: 30px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 10px; z-index: 1; }
+        #remaining { position: absolute; top: 60px; left: 20px; color: white; font-family: Arial, sans-serif; font-size: 10px; z-index: 1; }
         /* Styles for the game over screen */
         #game-over {
             position: absolute;
@@ -41,7 +41,7 @@
             left: 20px;
             color: white;
             font-family: Arial, sans-serif;
-            font-size: 18px;
+            font-size: 10px;
             z-index: 1;
         }
         #playerOnLevel {
@@ -50,7 +50,7 @@
             left: 20px;
             color: white;
             font-family: Arial, sans-serif;
-            font-size: 18px;
+            font-size: 10px;
             z-index: 1;
         }
         #foodOnLevel {
@@ -59,7 +59,7 @@
             left: 20px;
             color: white;
             font-family: Arial, sans-serif;
-            font-size: 18px;
+            font-size: 10px;
             z-index: 1;
         }
         /* Fullscreen Button */
@@ -68,7 +68,7 @@
             bottom: 30px;
             right: 30px;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: 10px;
             z-index: 1;
             background-color: #FFA500;
             color: white;
@@ -120,7 +120,7 @@
 <body>
     <div id="startGameContainer">
         <button id="startGame">
-            Start Game
+            Start SNEK by Pepodins
         </button>
     </div>
     <div id="score"><span style="color: #FFA500"><i class="fa-solid fa-trophy"></i></span> Score: 0</div>
